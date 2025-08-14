@@ -14,25 +14,44 @@ export async function GET(request: NextRequest) {
     }
 
     // Get best submission for each student per assignment
-    const leaderboard = await prisma.$queryRaw`
-      SELECT 
-        s.studentId,
-        s.assignmentId,
-        u.name as studentName,
-        u.email as studentEmail,
-        a.name as assignmentName,
-        MAX(s.score) as bestScore,
-        COUNT(s.id) as totalSubmissions,
-        MAX(s.timestamp) as lastSubmission,
-        s.testResults as latestTestResults
-      FROM Submission s
-      JOIN User u ON s.studentId = u.id
-      JOIN Assignment a ON s.assignmentId = a.id
-      ${assignmentId ? `WHERE s.assignmentId = '${assignmentId}'` : ''}
-      GROUP BY s.studentId, s.assignmentId
-      ORDER BY bestScore DESC, lastSubmission DESC
-      LIMIT ${limit}
-    ` as any[]
+    const leaderboard = assignmentId
+      ? await prisma.$queryRaw`
+          SELECT 
+            s.studentId,
+            s.assignmentId,
+            u.name as studentName,
+            u.email as studentEmail,
+            a.name as assignmentName,
+            MAX(s.score) as bestScore,
+            COUNT(s.id) as totalSubmissions,
+            MAX(s.timestamp) as lastSubmission,
+            s.testResults as latestTestResults
+          FROM Submission s
+          JOIN User u ON s.studentId = u.id
+          JOIN Assignment a ON s.assignmentId = a.id
+          WHERE s.assignmentId = ${assignmentId}
+          GROUP BY s.studentId, s.assignmentId
+          ORDER BY bestScore DESC, lastSubmission DESC
+          LIMIT ${Number(limit)}
+        `
+      : await prisma.$queryRaw`
+          SELECT 
+            s.studentId,
+            s.assignmentId,
+            u.name as studentName,
+            u.email as studentEmail,
+            a.name as assignmentName,
+            MAX(s.score) as bestScore,
+            COUNT(s.id) as totalSubmissions,
+            MAX(s.timestamp) as lastSubmission,
+            s.testResults as latestTestResults
+          FROM Submission s
+          JOIN User u ON s.studentId = u.id
+          JOIN Assignment a ON s.assignmentId = a.id
+          GROUP BY s.studentId, s.assignmentId
+          ORDER BY bestScore DESC, lastSubmission DESC
+          LIMIT ${Number(limit)}
+        ` as any[]
 
     // Format the results
     const formattedLeaderboard = leaderboard.map((entry, index) => ({

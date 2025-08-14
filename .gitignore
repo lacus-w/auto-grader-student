@@ -2,7 +2,9 @@
 
 # misc
 .DS_Store
+.next
 *.pem
+package-lock.json
 
 target/
 __pycache__
